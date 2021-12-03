@@ -1,5 +1,6 @@
 const express = require('express');
 const mysql = require('mysql')
+const session = require('express-session')
 const port = process.env.PORT || 3000;
 
 const app = express();
@@ -22,9 +23,20 @@ connection.connect((err)=>{
     console.log('connected');
 })
 
+app.use(
+    session({
+        secret: 'haslsiidfh',
+        resave: false,
+        saveUninitialized: false
+    })
+)
+
 //GET list page
 
 app.get('/', (req, res)=>{
+
+
+
     connection.query(
         'SELECT * FROM articles', 
         (err, results)=>{
@@ -70,6 +82,39 @@ app.get('/article/:id', (req, res)=>{
     )
 })
 
+
+//Get login package
+
+app.get('/login', (req, res)=>{
+    res.render('login')
+})
+
+app.post('/login', (req, res)=>{
+    const username = req.body.username;
+    const password = req.body.password;
+
+    connection.query(
+        'SELECT * FROM users WHERE username = ?',
+        [username],
+        (err, results)=>{
+            if(results.length > 0){
+                if(password === results[0].password){
+
+                    req.session.username = results[0].username
+
+                    console.log(req.session);
+                    res.render('secretpage')
+                } else {
+                    res.send('Failed to login')
+                }
+            } else{
+                res.send('Data Not Found')
+            }
+        }
+
+    )
+
+})
 
 // GET admin.ejs page
 
