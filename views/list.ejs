@@ -1,25 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blog: Home</title>
-</head>
-<body>
-
-   <% articles.forEach((article)=>{ %> 
-        <div>
-            <h1><%= article.title %> </h1>
-            <p><%= article.summary %> </p>
-            <a href="/article/<%= article.id %> ">Read more...</a>
-        </div>
-   <% }) %>
-
-
-
-
-
-
-</body>
+  </head>
+  <body>
+    <h4><%= locals.username %> </h4>
+    <% articles.forEach((article)=>{ %>
+    <div>
+      <h1><%= article.title %></h1>
+      <p><%= article.summary %></p>
+      <a href="/article/<%= article.id %> ">Read more...</a>
+    </div>
+    <% }) %>
+  </body>
 </html>
+
+
