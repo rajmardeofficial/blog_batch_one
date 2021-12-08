@@ -8,6 +8,13 @@
   </head>
   <body>
     <h4><%= locals.username %> </h4>
+
+    <% if(locals.isLoggedIn){ %>
+        <a href="/logout">Logout</a>
+    <% }else{ %>
+      <a href="/login">Login</a>
+    <% }  %> 
+
     <% articles.forEach((article)=>{ %>
     <div>
       <h1><%= article.title %></h1>

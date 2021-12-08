@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const mysql = require("mysql");
 const session = require("express-session");
@@ -14,7 +15,7 @@ app.use(express.static("public"));
 const connection = mysql.createConnection({
   host: "127.0.0.1",
   user: "rajmarde",
-  password: "xyz",
+  password: process.env.DATABASE_PASSWORD,
   database: "blog_batch_one",
 });
 
@@ -25,7 +26,7 @@ connection.connect((err) => {
 
 app.use(
   session({
-    secret: "haslsiidfh",
+    secret: process.env.SESSION_SECRET_KEY,
     resave: false,
     saveUninitialized: false,
   })
@@ -35,9 +36,11 @@ app.use((req, res, next) => {
   if (req.session.username === undefined) {
     console.log("You are not logged in");
     res.locals.username = 'Hello please sign in'
+    res.locals.isLoggedIn = false;
   } else {
     console.log("You are Logged In");
     res.locals.username = req.session.username
+    res.locals.isLoggedIn = true;
   }
 
   next();
@@ -84,6 +87,28 @@ app.get("/article/:id", (req, res) => {
   );
 });
 
+//Signup
+
+app.get('/signup', (req, res)=>{
+  res.render('signup')
+})
+
+app.post('/signup', (req, res)=>{
+  const username = req.body.username;
+  const password = req.body.password;
+
+  connection.query(
+    'INSERT INTO users (username, password) VALUES (?,?)',
+    [username, password],
+    (err, results)=>{
+      req.session.userId = results.insertId
+      req.session.username = username
+      console.log(results);
+      res.redirect('/');
+    }
+  )
+})
+
 //Get login package
 
 app.get("/login", (req, res) => {
@@ -98,9 +123,11 @@ app.post("/login", (req, res) => {
     "SELECT * FROM users WHERE username = ?",
     [username],
     (err, results) => {
+      console.log(results);
       if (results.length > 0) {
         if (password === results[0].password) {
           req.session.username = results[0].username;
+          req.session.userId = results[0].id
           res.redirect("/");
         } else {
           res.send("Failed to login");
@@ -117,6 +144,12 @@ app.post("/login", (req, res) => {
 app.get("/admin", (req, res) => {
   res.render("admin");
 });
+
+app.get('/logout', (req, res)=>{
+  req.session.destroy((err)=>{
+    res.redirect('/')
+  })
+})
 
 app.listen(port, () => console.log(`server running on port ${port}`));
 
