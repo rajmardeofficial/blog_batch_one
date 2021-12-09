@@ -7,9 +7,16 @@
     <title>SignUp</title>
 </head>
 <body>
+
+    <ul>
+        <% errors.forEach((error=>{ %>
+            <li><%= error %></li>
+       <% })) %> 
+    </ul>
+
     <form action="/signup" method="post">
-        <input type="text" name='username' required placeholder="username">
-        <input type="password" name="password" required placeholder="password">
+        <input type="text" name='username' placeholder="username">
+        <input type="password" name="password"  placeholder="password">
         <button type="submit">Signup</button>
     </form>
 </body>

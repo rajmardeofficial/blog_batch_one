@@ -1,7 +1,8 @@
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql");
 const session = require("express-session");
+const bcrypt = require("bcrypt");
 const port = process.env.PORT || 3000;
 
 const app = express();
@@ -35,11 +36,11 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.username === undefined) {
     console.log("You are not logged in");
-    res.locals.username = 'Hello please sign in'
+    res.locals.username = "Hello please sign in";
     res.locals.isLoggedIn = false;
   } else {
     console.log("You are Logged In");
-    res.locals.username = req.session.username
+    res.locals.username = req.session.username;
     res.locals.isLoggedIn = true;
   }
 
@@ -89,25 +90,79 @@ app.get("/article/:id", (req, res) => {
 
 //Signup
 
-app.get('/signup', (req, res)=>{
-  res.render('signup')
-})
+app.get("/signup", (req, res) => {
+  res.render("signup", { errors: [] });
+});
 
-app.post('/signup', (req, res)=>{
-  const username = req.body.username;
-  const password = req.body.password;
+//check empty status
+//check username (duplicate)
+//signup user
 
-  connection.query(
-    'INSERT INTO users (username, password) VALUES (?,?)',
-    [username, password],
-    (err, results)=>{
-      req.session.userId = results.insertId
-      req.session.username = username
-      console.log(results);
-      res.redirect('/');
+app.post(
+  "/signup",
+
+  (req, res, next) => {
+    const username = req.body.username;
+    const password = req.body.password;
+
+    const errors = [];
+
+    if (username === "") {
+      errors.push("Username is empty");
     }
-  )
-})
+    if (password === "") {
+      errors.push("password is empty");
+    }
+
+    if (errors.length > 0) {
+      res.render("signup", { errors: errors });
+    } else {
+      next();
+    }
+  },
+
+  (req, res, next) => {
+    const username = req.body.username;
+
+    const errors = [];
+
+    connection.query(
+      "SELECT * FROM users WHERE username = ?",
+      [username],
+      (err, results) => {
+        if (results.length > 0) {
+          errors.push("Username already exists");
+          res.render("signup", { errors: errors });
+        } else {
+          next();
+        }
+      }
+    );
+  },
+
+  (req, res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+
+    //Hashing password using brypt
+
+    //more number of salting rounds more secure ur password is
+    //more number of salting rounds poor performance for ur application
+
+    bcrypt.hash(password, 10, (err, hash) => {
+      connection.query(
+        "INSERT INTO users (username, password) VALUES (?,?)",
+        [username, hash],
+        (err, results) => {
+          req.session.userId = results.insertId;
+          req.session.username = username;
+          console.log(results);
+          res.redirect("/");
+        }
+      );
+    });
+  }
+);
 
 //Get login package
 
@@ -123,15 +178,17 @@ app.post("/login", (req, res) => {
     "SELECT * FROM users WHERE username = ?",
     [username],
     (err, results) => {
-      console.log(results);
+      const hash = results[0].password;
       if (results.length > 0) {
-        if (password === results[0].password) {
-          req.session.username = results[0].username;
-          req.session.userId = results[0].id
-          res.redirect("/");
-        } else {
-          res.send("Failed to login");
-        }
+        bcrypt.compare(password, hash, (err, isEqual) => {
+          if (isEqual) {
+            req.session.username = results[0].username;
+            req.session.userId = results[0].id;
+            res.redirect("/");
+          } else {
+            res.redirect("/login");
+          }
+        });
       } else {
         res.send("Data Not Found");
       }
@@ -145,13 +202,16 @@ app.get("/admin", (req, res) => {
   res.render("admin");
 });
 
-app.get('/logout', (req, res)=>{
-  req.session.destroy((err)=>{
-    res.redirect('/')
-  })
-})
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    res.redirect("/");
+  });
+});
 
 app.listen(port, () => console.log(`server running on port ${port}`));
+
+//MIDDLE WARE
+//a function which exist between request(client) and response(server)
 
 //                                     HTTP
 // pc1('/list', username, password) =========> server (sid)
